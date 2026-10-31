@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  h1, h2, h3, h4, .font-serif {
+    font-family: 'Cinzel', serif, system-ui;
+  }
+}
+
+/* Custom luxury scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF8F2;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4B876;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #BA9950;
+}
+
