@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ROLE_ADMIN
+  ROLE_PLANNER
+  ROLE_CLIENT
+  ROLE_VENDOR
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  active    Boolean  @default(true)
+  role      Role     @default(ROLE_CLIENT)
+  createdAt DateTime @default(now())
+
+  @@map("users")
+}
+
+model WeddingPackage {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  basePrice   Decimal  @db.Decimal(12, 2)
+  inclusions  String?
+
+  @@map("wedding_packages")
+}
+
+model Enquiry {
+  id                        Int       @id @default(autoincrement())
+  coupleNames               String
+  email                     String    @unique
+  phone                     String
+  preferredWeddingDate      DateTime?
+  estimatedGuestCount       Int       @default(400)
+  weddingLocation           String?
+  preferredTheme            String    @default("Royal Heritage")
+  weddingType               String    @default("Traditional Royal")
+  selectedPackage           String    @default("Full-Service Wedding")
+  maximumBudget             Decimal   @default(2500000.00) @db.Decimal(14, 2)
+  additionalRequirements    String?
+  status                    String    @default("New")
+  consultationScheduledDate DateTime?
+  assignedPlannerEmail      String?
+  createdAt                 DateTime  @default(now())
+
+  @@map("enquiries")
+}
+
+model Agreement {
+  id                 Int       @id @default(autoincrement())
+  agreementNumber    String    @unique
+  clientNames        String
+  clientEmail        String
+  packageName        String
+  serviceScope       String?
+  agreedPrice        Decimal   @db.Decimal(14, 2)
+  termsAndConditions String?
+  signatureData      String?
+  signedTimestamp    DateTime?
+  status             String    @default("Sent")
+  createdAt          DateTime  @default(now())
+
+  @@map("agreements")
+}
+
+model VendorQuotation {
+  id                        Int       @id @default(autoincrement())
+  vendorName                String
+  vendorEmail               String
+  serviceCategory           String    @default("Catering")
+  pricingModel              String    @default("PER_PLATE") // "PER_PLATE" | "FIXED"
+  cuisineType               String?
+  regionalSpecialization    String?
+  menuDetails               String?
+  vegetarianOptionsCount    Int?
+  nonVegetarianOptionsCount Int?
+  pricePerPlate             Decimal   @db.Decimal(10, 2)
+  guestCount                Int       @default(400)
+  additionalCharges         Decimal   @db.Decimal(12, 2)
+  totalEstimatedPrice       Decimal   @db.Decimal(12, 2)
+  serviceInclusions         String?
+  exclusions                String?
+  recommended               Boolean   @default(false)
+  status                    String    @default("SUBMITTED")
+  selectionTimestamp        DateTime?
+  enquiryId                 Int?      @default(1)
+  packageTitle              String?
+  description               String?
+  taxAmount                 Decimal   @default(0) @db.Decimal(12, 2)
+  availability              String?   @default("Available for Requested Date")
+  validUntil                DateTime?
+  termsAndConditions        String?
+  createdAt                 DateTime  @default(now())
+
+  @@map("vendor_quotations")
+}
+
+model WeddingTask {
+  id                  Int       @id @default(autoincrement())
+  enquiryId           Int       @default(1)
+  title               String
+  description         String?
+  category            String
+  assignedOwner       String?
+  startDate           DateTime?
+  deadline            DateTime?
+  priority            String    @default("MEDIUM")
+  status              String    @default("To Plan")
+  completionTimestamp DateTime?
+  createdAt           DateTime  @default(now())
+
+  @@unique([enquiryId, title])
+  @@map("wedding_tasks")
+}
+
+model EventTimeline {
+  id                 Int       @id @default(autoincrement())
+  timeSlot           String
+  activity           String
+  assignedVendor     String?
+  activityStatus     String    @default("Upcoming")
+  expectedCompletion String?
+  actualCompletion   String?
+  delayMinutes       Int       @default(0)
+  arrivalStatus      String    @default("Not Arrived")
+  notes              String?
+  statusUpdatedAt    DateTime?
+
+  @@unique([timeSlot, activity])
+  @@map("event_timelines")
+}
+
+model VendorEvent {
+  id                      Int       @id @default(autoincrement())
+  vendorEmail             String
+  vendorName              String
+  eventName               String
+  clientName              String
+  eventDate               DateTime
+  venue                   String
+  guestCount              Int       @default(400)
+  serviceType             String
+  requirements            String?
+  acceptedQuotationAmount Decimal   @db.Decimal(12, 2)
+  category                String    @default("ONGOING") // 'ONGOING' | 'UPCOMING' | 'PAST'
+  eventStatus             String    @default("In Progress") // 'In Progress' | 'Confirmed' | 'Completed'
+  expectedServiceTime     String?
+  arrivalStatus           String    @default("Not Arrived")
+  serviceProgress         String?
+  paymentStatus           String    @default("Advance Paid (50%)")
+  completionNotes         String?
+  createdAt               DateTime  @default(now())
+
+  @@map("vendor_events")
+}
+
+model AdditionalExpense {
+  id                   Int       @id @default(autoincrement())
+  enquiryId            Int       @default(1)
+  itemDescription      String
+  category             String
+  amount               Decimal   @db.Decimal(12, 2)
+  clientApprovalStatus String    @default("Pending Approval")
+  reason               String?
+  requestedAt          DateTime  @default(now())
+  resolvedAt           DateTime?
+
+  @@unique([enquiryId, itemDescription])
+  @@map("additional_expenses")
+}
+
+model Invoice {
+  id                      Int       @id @default(autoincrement())
+  invoiceNumber           String    @unique
+  clientNames             String
+  agreedPackageAmount     Decimal   @db.Decimal(14, 2)
+  approvedAdditionalCosts Decimal   @db.Decimal(14, 2)
+  finalClientAmount       Decimal   @db.Decimal(14, 2)
+  amountReceived          Decimal   @db.Decimal(14, 2)
+  outstandingBalance      Decimal   @db.Decimal(14, 2)
+  vendorPayableAmount     Decimal   @db.Decimal(14, 2)
+  paymentStatus           String    @default("PARTIALLY_PAID")
+  dueDate                 DateTime?
+  generatedAt             DateTime  @default(now())
+
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id                Int       @id @default(autoincrement())
+  invoiceId         Int?
+  enquiryId         Int       @default(1)
+  category          String
+  quotationId       Int?
+  vendorName        String
+  vendorEmail       String?
+  packageTitle      String
+  pricingModel      String    @default("PER_PLATE") // "PER_PLATE" | "FIXED"
+  unitPrice         Decimal   @db.Decimal(12, 2)
+  quantity          Int       @default(1)
+  baseAmount        Decimal   @db.Decimal(14, 2)
+  additionalCharges Decimal   @default(0) @db.Decimal(12, 2)
+  taxAmount         Decimal   @default(0) @db.Decimal(12, 2)
+  discountAmount    Decimal   @default(0) @db.Decimal(12, 2)
+  lineTotal         Decimal   @db.Decimal(14, 2)
+  status            String    @default("SELECTED") // "SELECTED" | "CONFIRMED"
+  selectedAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+
+  @@unique([enquiryId, category])
+  @@map("invoice_line_items")
+}
+
+model Payment {
+  id                   Int       @id @default(autoincrement())
+  enquiryId            Int       @default(1)
+  milestoneTitle       String
+  amountDue            Decimal   @db.Decimal(12, 2)
+  amountPaid           Decimal?  @db.Decimal(12, 2)
+  dueDate              DateTime?
+  paymentDate          DateTime?
+  status               String    @default("PAID")
+  transactionReference String?   @unique
+
+  @@unique([enquiryId, milestoneTitle])
+  @@map("payments")
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  title      String
+  message    String
+  type       String
+  targetRole String?
+  isRead     Boolean  @default(false)
+  timestamp  DateTime @default(now())
+
+  @@map("notifications")
+}
+
